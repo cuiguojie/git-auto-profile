@@ -1,0 +1,26 @@
+# 源代码
+src/
+tsconfig.json
+tsup.config.ts
+
+# 开发依赖
+node_modules/
+pnpm-lock.yaml
+
+# 开发配置
+.vscode/
+.idea/
+
+# 构建产物
+*.tsbuildinfo
+*.map
+
+# 测试
+*.test.ts
+*.spec.ts
+
+# 其他
+.git/
+.gitignore
+README.md
+roadmap.md
