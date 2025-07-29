@@ -3,9 +3,9 @@ import { defineConfig } from 'tsup'
 export default defineConfig({
   entry: ['src/cli.ts'],
   format: ['esm'],
-  target: 'node22',
+  target: 'node18',
   clean: true,
-  minify: false,
+  minify: true,
   sourcemap: false,
   splitting: false,
   banner: {
