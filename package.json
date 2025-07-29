@@ -1,8 +1,11 @@
 {
   "name": "@cuiguojie/gap",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Automatic Git profile switching based on remote URL patterns",
   "type": "module",
+  "bin": {
+    "gap": "./dist/cli.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/cuiguojie/git-auto-profile.git"
@@ -47,6 +50,7 @@
     "tsup": "^8.0.1",
     "typescript": "^5.3.3"
   },
+  "main": "./dist/cli.js",
   "engines": {
     "node": ">=22.0.0"
   }
