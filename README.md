@@ -199,7 +199,3 @@ npx @cuiguojie/gap whoami
 cat ~/.gitconfig
 ls ~/.git-auto-profile/profiles/
 ```
-
-## 许可证
-
-MIT License - 详见 [LICENSE](LICENSE) 文件
