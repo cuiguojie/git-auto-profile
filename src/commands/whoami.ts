@@ -24,14 +24,37 @@ export async function whoamiCommand(): Promise<void> {
         const config = JSON.parse(configContent);
         const profilesPath = expandPath(config.profilesPath);
         
-        const profileName = path.basename(repoRoot);
-        const profileFile = path.join(profilesPath, `${profileName}.gitconfig`);
-        
+        // 获取当前仓库的远程URL
         try {
-          await fs.access(profileFile);
-          console.log(chalk.green(`✅ Profile configured: ${profileName}`));
-        } catch {
-          console.log(chalk.yellow(`⚠️  No profile found for: ${profileName}`));
+          const remoteUrl = execSync('git config --get remote.origin.url', { encoding: 'utf8' }).trim();
+          
+          // 读取git配置，查找匹配的includeIf规则
+          const gitConfigPath = path.join(process.env.HOME || '', '.gitconfig');
+          const gitConfigContent = await fs.readFile(gitConfigPath, 'utf8');
+          
+          // 查找所有有效的includeIf规则
+          const includeIfRegex = /\[includeIf "hasconfig:remote\.\*\.url:([^"]+)"\][\s\S]*?path = ([^\n]+)/g;
+          const matches = Array.from(gitConfigContent.matchAll(includeIfRegex));
+          
+          let matchedProfile = null;
+          for (const match of matches) {
+            const [, pattern, profilePath] = match;
+            // 简单的通配符匹配
+            const regexPattern = pattern.replace(/\*\*/g, '.*').replace(/\*/g, '[^/]*');
+            if (new RegExp(regexPattern).test(remoteUrl)) {
+              const profileName = path.basename(profilePath, '.conf');
+              matchedProfile = profileName;
+              break;
+            }
+          }
+          
+          if (matchedProfile) {
+            console.log(chalk.green(`✅ Active profile: ${matchedProfile}`));
+          } else {
+            console.log(chalk.yellow(`⚠️  No matching profile found for remote: ${remoteUrl}`));
+          }
+        } catch (error: any) {
+          console.log(chalk.yellow(`⚠️  Could not determine active profile`));
         }
       } catch {
         console.log(chalk.red('❌ git-auto-profile not initialized'));

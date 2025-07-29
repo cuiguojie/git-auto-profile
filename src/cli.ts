@@ -3,6 +3,8 @@ import chalk from 'chalk';
 import { initCommand } from './commands/init.js';
 import { createCommand } from './commands/create.js';
 import { whoamiCommand } from './commands/whoami.js';
+import { listCommand } from './commands/list.js';
+import { removeCommand } from './commands/remove.js';
 
 program
   .name('gap')
@@ -24,5 +26,17 @@ program
   .command('whoami')
   .description('Show current Git configuration and its source')
   .action(whoamiCommand);
+
+program
+  .command('list')
+  .alias('ls')
+  .description('List all available profiles')
+  .action(listCommand);
+
+program
+  .command('remove')
+  .alias('rm')
+  .description('Remove a profile')
+  .action(removeCommand);
 
 program.parse();

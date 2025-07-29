@@ -65,7 +65,7 @@
            ```
         b. **修改 `.gitconfig`**: 在管理标记块内，添加一条新的 `[includeIf]` 规则：
            ```ini
-           [includeIf "hasconfig:remote.*.url=<输入的URL模式>"]
+           [includeIf "hasconfig:remote.*.url:<输入的URL模式>"]
                path = <Profile文件的路径，使用~符号>
            ```
 

@@ -2,7 +2,8 @@ import { intro, outro, text, select } from '@clack/prompts';
 import chalk from 'chalk';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { getConfigPath, getProfilesDir, expandPath, getGitConfigPath, Profile } from '../utils.js';
+import { getConfigPath, getProfilesDir, expandPath, Profile } from '../utils.js';
+import { GitConfigManager } from '../gitconfig-manager.js';
 
 export async function createCommand(): Promise<void> {
   intro(chalk.cyan('Create new profile'));
@@ -45,10 +46,40 @@ export async function createCommand(): Promise<void> {
 
     const sshDir = path.join(process.env.HOME || '', '.ssh');
     const sshFiles = await fs.readdir(sshDir).catch(() => []);
-    const privateKeys = sshFiles.filter(f => 
-      (f.startsWith('id_') || f.endsWith('.pem')) && 
-      !f.endsWith('.pub')
-    );
+    
+    // 更智能的 SSH 私钥检测
+    const privateKeys = [];
+    for (const file of sshFiles) {
+      if (file.endsWith('.pub')) continue; // 跳过公钥
+      
+      const filePath = path.join(sshDir, file);
+      try {
+        const stats = await fs.stat(filePath);
+        if (!stats.isFile()) continue;
+        
+        const content = await fs.readFile(filePath, 'utf8');
+        
+        // 检测常见的 SSH 私钥格式
+        const isPrivateKey = (
+          content.includes('-----BEGIN ') && 
+          content.includes(' PRIVATE KEY-----') ||
+          content.startsWith('-----BEGIN OPENSSH PRIVATE KEY-----') ||
+          content.startsWith('-----BEGIN RSA PRIVATE KEY-----') ||
+          content.startsWith('-----BEGIN DSA PRIVATE KEY-----') ||
+          content.startsWith('-----BEGIN EC PRIVATE KEY-----') ||
+          content.startsWith('-----BEGIN ED25519 PRIVATE KEY-----') ||
+          // 老版本 OpenSSH 格式
+          content.startsWith('SSH PRIVATE KEY FILE FORMAT 1.1')
+        );
+        
+        if (isPrivateKey) {
+          privateKeys.push(file);
+        }
+      } catch {
+        // 文件无法读取，跳过
+        continue;
+      }
+    }
 
     if (privateKeys.length === 0) {
       outro(chalk.red('No SSH keys found in ~/.ssh directory'));
@@ -97,35 +128,13 @@ export async function createCommand(): Promise<void> {
     const profileFile = path.join(profilesDir, `${name}.conf`);
     await fs.writeFile(profileFile, profileContent);
 
-    // Update .gitconfig
-    const gitConfigPath = getGitConfigPath();
-    let gitConfigContent = '';
+    // 添加 includeIf 规则到 gitconfig
     try {
-      gitConfigContent = await fs.readFile(gitConfigPath, 'utf8');
+      await GitConfigManager.addIncludeIfRule(urlPattern, `${config.profilesPath}/${name}.conf`);
     } catch (error: any) {
-      if (error.code !== 'ENOENT') throw error;
-    }
-
-    const managedBlockStart = '# --- GIT-AUTO-PROFILE MANAGED BLOCK ---';
-    const managedBlockEnd = '# --- END GIT-AUTO-PROFILE MANAGED BLOCK ---';
-
-    const startIndex = gitConfigContent.indexOf(managedBlockStart);
-    const endIndex = gitConfigContent.indexOf(managedBlockEnd);
-
-    if (startIndex === -1 || endIndex === -1) {
-      outro(chalk.red('Managed block not found. Please run "gap init" first.'));
+      outro(chalk.red(error.message));
       return;
     }
-
-    const includeIfRule = `[includeIf "hasconfig:remote.*.url=${urlPattern}"]
-    path = ${config.profilesPath}/${name}.conf`;
-
-    const beforeBlock = gitConfigContent.substring(0, startIndex + managedBlockStart.length);
-    const afterBlock = gitConfigContent.substring(endIndex);
-    
-    const newContent = beforeBlock + '\n' + includeIfRule + '\n' + afterBlock;
-
-    await fs.writeFile(gitConfigPath, newContent);
 
     outro(chalk.green('✅ Profile created successfully!'));
     console.log(`Profile: ${chalk.cyan(name)}`);
