@@ -5,6 +5,7 @@ import { createCommand } from './commands/create.js';
 import { whoamiCommand } from './commands/whoami.js';
 import { listCommand } from './commands/list.js';
 import { removeCommand } from './commands/remove.js';
+import { cloneCommand } from './commands/clone.js';
 
 program
   .name('gap')
@@ -38,5 +39,11 @@ program
   .alias('rm')
   .description('Remove a profile')
   .action(removeCommand);
+
+program
+  .command('clone')
+  .description('Interactive clone with SSH key selection')
+  .argument('<repo-url>', 'Repository URL to clone')
+  .action(cloneCommand);
 
 program.parse();
